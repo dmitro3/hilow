@@ -4,33 +4,45 @@ pragma solidity ^0.8.4;
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract HilowContract is VRFConsumerBaseV2 {
+    struct Card {
+        uint256 value;
+    }
+
+    struct Game {
+        Card firstDraw;
+        Card secondDraw;
+    }
+
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
     address s_owner;
     address vrfCoordinator = 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
     bytes32 s_keyHash =
         0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
-    uint32 callbackGasLimit = 40000;
+    uint32 callbackGasLimit = 1000000;
     uint16 requestConfirmations = 3;
-    uint32 numWords = 2;
+    uint32 private MAX_WORDS = 10;
+    uint32 private BUFFER_WORDS = 8;
+    Card dummyCard = Card(0);
 
-    uint256 private constant DRAW_IN_PROGRESS = 99;
-
-    event CardDrawn(uint256 indexed requestId, address indexed drawer);
-    event CardSeen(
-        uint256 indexed requestId,
-        uint256 indexed cardValue,
-        uint256 indexed suitValue
+    event CardDrawn(address indexed player, string firstDrawCardName);
+    event GameFinished(
+        address indexed player,
+        string firstDrawCardName,
+        string secondDrawCardName,
+        bool isWin,
+        uint256 payoutAmount
     );
 
-    mapping(uint256 => address) private s_drawers;
-    mapping(address => uint256[2]) private s_results;
-
-    constructor(uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(uint64 subscriptionId)
+        payable
+        VRFConsumerBaseV2(vrfCoordinator)
+    {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
-        s_owner = msg.sender;
+        s_owner = payable(msg.sender);
         s_subscriptionId = subscriptionId;
     }
 
@@ -39,43 +51,126 @@ contract HilowContract is VRFConsumerBaseV2 {
         _;
     }
 
-    function drawCard(address drawer) public returns (uint256 requestId) {
-        require(s_results[drawer][0] != DRAW_IN_PROGRESS, "Draw in progress");
-        // Will revert if subscription is not set and funded.
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success, bytes memory data) = s_owner.call{value: balance}(
+            "Withdrawing funds"
+        );
+        require(success, "Withdraw failed");
+    }
+
+    Card[] private cards;
+    using Counters for Counters.Counter;
+    Counters.Counter private _currentCard;
+    mapping(address => Game) private gamesByAddr;
+
+    function viewCards() public view onlyOwner returns (Card[] memory) {
+        return cards;
+    }
+
+    function viewCurrentCardCounter() public view onlyOwner returns (uint256) {
+        return _currentCard.current();
+    }
+
+    function viewGame(address addr)
+        public
+        view
+        onlyOwner
+        returns (Game memory)
+    {
+        return gamesByAddr[addr];
+    }
+
+    function drawBulkRandomCards() private returns (uint256 requestId) {
         requestId = COORDINATOR.requestRandomWords(
             s_keyHash,
             s_subscriptionId,
             requestConfirmations,
             callbackGasLimit,
-            numWords
+            MAX_WORDS
         );
+    }
 
-        s_drawers[requestId] = drawer;
-        s_results[drawer] = [DRAW_IN_PROGRESS, DRAW_IN_PROGRESS];
-        emit CardDrawn(requestId, drawer);
+    function initialCardLoad() public onlyOwner {
+        drawBulkRandomCards();
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords)
         internal
         override
     {
-        uint256 cardValue = (randomWords[0] % 13) + 1;
-        uint256 suitValue = (randomWords[1] % 4) + 1;
-        s_results[s_drawers[requestId]] = [cardValue, suitValue];
-        emit CardSeen(requestId, cardValue, suitValue);
+        for (uint256 index = 0; index < MAX_WORDS; index++) {
+            cards[index] = Card((randomWords[index] % 13) + 1);
+        }
+        _currentCard.reset();
     }
 
-    function card(address player) public view returns (string memory) {
-        require(s_results[player][0] != 0, "Card not drawn");
-        require(s_results[player][0] != DRAW_IN_PROGRESS, "Draw in progress");
-        return getCard(s_results[player][0], s_results[player][1]);
+    function drawCard() public {
+        if (_currentCard.current() > BUFFER_WORDS) {
+            drawBulkRandomCards();
+        }
+        if (_currentCard.current() > MAX_WORDS) {
+            _currentCard.reset();
+        }
+
+        uint256 currentCard = _currentCard.current();
+        _currentCard.increment();
+        Card memory firstDraw = cards[currentCard];
+        Game memory game = Game(firstDraw, dummyCard);
+        gamesByAddr[msg.sender] = game;
+        emit CardDrawn(msg.sender, getCard(firstDraw));
     }
 
-    function getCard(uint256 cardValue, uint256 suitValue)
-        private
-        pure
-        returns (string memory)
-    {
+    function bet(bool higher) public payable {
+        Game memory currentGame = gamesByAddr[msg.sender];
+        require(
+            currentGame.firstDraw.value > 0,
+            "First card should be drawn for the game"
+        );
+        require(
+            currentGame.secondDraw.value == 0,
+            "Second card has already been drawn for the game"
+        );
+        if (_currentCard.current() > MAX_WORDS) {
+            _currentCard.reset();
+        }
+
+        uint256 currentCard = _currentCard.current();
+        _currentCard.increment();
+        Card memory secondDraw = cards[currentCard];
+        currentGame.secondDraw = secondDraw;
+        gamesByAddr[msg.sender] = currentGame;
+
+        bool isWin;
+        if (higher) {
+            if (currentGame.secondDraw.value >= currentGame.firstDraw.value) {
+                isWin = true;
+            }
+        } else {
+            if (currentGame.secondDraw.value <= currentGame.firstDraw.value) {
+                isWin = true;
+            }
+        }
+
+        uint256 payoutAmount;
+        if (isWin) {
+            payoutAmount = msg.value * 2;
+            (bool success, bytes memory data) = payable(msg.sender).call{
+                value: payoutAmount
+            }("Sending payout");
+            require(success, "Payout failed");
+        }
+
+        emit GameFinished(
+            msg.sender,
+            getCard(currentGame.firstDraw),
+            getCard(currentGame.secondDraw),
+            isWin,
+            payoutAmount
+        );
+    }
+
+    function getCard(Card memory card) private pure returns (string memory) {
         string[13] memory cardNames = [
             "A",
             "2",
@@ -92,15 +187,6 @@ contract HilowContract is VRFConsumerBaseV2 {
             "K"
         ];
 
-        string[4] memory suitNames = ["Spades", "Hearts", "Diamonds", "Clubs"];
-
-        return
-            string(
-                abi.encodePacked(
-                    cardNames[cardValue - 1],
-                    " of ",
-                    suitNames[suitValue - 1]
-                )
-            );
+        return cardNames[card.value - 1];
     }
 }

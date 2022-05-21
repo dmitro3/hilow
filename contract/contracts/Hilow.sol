@@ -6,7 +6,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract HilowContract is VRFConsumerBaseV2 {
+contract Hilow is VRFConsumerBaseV2 {
     struct Card {
         uint256 value;
     }

@@ -6,7 +6,7 @@ A high card-low card guessing and betting game.
 
 | Card | Lower or Same (Probability) | Higher or Same (Probability) |
 | ---- | --------------------------- | ---------------------------- |
-| King | 92.31% | 7.69% |
+| King | 100.00% | 7.69% |
 | Queen | 92.31% | 15.38% |
 | Jack | 84.62% | 23.08% |
 | 10 | 76.92% | 30.77% |
@@ -18,7 +18,7 @@ A high card-low card guessing and betting game.
 | 4 | 30.77% | 76.92% |
 | 3 | 23.08% | 84.62% |
 | 2 | 15.38% | 92.31% |
-| Ace | 7.69% | 92.31% |
+| Ace | 7.69% | 100.00% |
 
 | Card | Lower or Same (Payout) | Higher or Same (Payout) |
 | ---- | --------------------------- | ---------------------------- |

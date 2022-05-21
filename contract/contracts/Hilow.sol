@@ -19,13 +19,14 @@ contract HilowContract is VRFConsumerBaseV2 {
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
     address s_owner;
-    address vrfCoordinator = 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
-    bytes32 s_keyHash =
+    address constant vrfCoordinator =
+        0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
+    bytes32 constant s_keyHash =
         0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
-    uint32 callbackGasLimit = 1000000;
-    uint16 requestConfirmations = 3;
-    uint32 private MAX_WORDS = 10;
-    uint32 private BUFFER_WORDS = 8;
+    uint32 constant callbackGasLimit = 1000000;
+    uint16 constant requestConfirmations = 3;
+    uint32 private constant MAX_WORDS = 20;
+    uint32 private constant BUFFER_WORDS = 16;
     Card dummyCard = Card(0);
 
     event CardDrawn(address indexed player, string firstDrawCardName);
@@ -59,12 +60,17 @@ contract HilowContract is VRFConsumerBaseV2 {
         require(success, "Withdraw failed");
     }
 
-    Card[] private cards;
+    Card[MAX_WORDS] private cards;
     using Counters for Counters.Counter;
     Counters.Counter private _currentCard;
     mapping(address => Game) private gamesByAddr;
 
-    function viewCards() public view onlyOwner returns (Card[] memory) {
+    function viewCards()
+        public
+        view
+        onlyOwner
+        returns (Card[MAX_WORDS] memory)
+    {
         return cards;
     }
 

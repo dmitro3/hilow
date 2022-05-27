@@ -37,6 +37,7 @@ contract Hilow is VRFConsumerBaseV2 {
         bool isWin,
         uint256 payoutAmount
     );
+    event DealerTipped(address indexed tipper, uint256 amount);
 
     constructor(uint64 subscriptionId)
         payable
@@ -85,6 +86,11 @@ contract Hilow is VRFConsumerBaseV2 {
         returns (Game memory)
     {
         return gamesByAddr[addr];
+    }
+
+    function tip() public payable {
+        console.log("Dealer tipped");
+        emit DealerTipped(msg.sender, msg.value);
     }
 
     function drawBulkRandomCards() private returns (uint256 requestId) {

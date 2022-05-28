@@ -1,26 +1,40 @@
-import { WagmiConfig, createClient, chain, configureChains } from 'wagmi'
+import { WagmiConfig, createClient, chain, configureChains } from "wagmi";
 
-import { alchemyProvider } from 'wagmi/providers/alchemy'
+import { alchemyProvider } from "wagmi/providers/alchemy";
 
-import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { InjectedConnector } from "wagmi/connectors/injected";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 
-import Profile from './Profile'
+import Profile from "./Profile";
 
-const alchemyId = process.env.ALCHEMY_ID
+const alchemyId = process.env.ALCHEMY_ID;
 
-const { chains, provider, webSocketProvider } = configureChains([chain.polygonMumbai], [
-  alchemyProvider({ alchemyId }),
-])
+const { chains, provider, webSocketProvider } = configureChains(
+  [chain.polygonMumbai],
+  [alchemyProvider({ alchemyId })]
+);
 
 // Set up client
 const client = createClient({
   autoConnect: true,
   connectors: [
-    new MetaMaskConnector({ chains }),
+    new WalletConnectConnector({
+      chains,
+      options: {
+        qrcode: true,
+      },
+    }),
+    new InjectedConnector({
+      chains,
+      options: {
+        name: "Injected",
+        shimDisconnect: true,
+      },
+    }),
   ],
   provider,
   webSocketProvider,
-})
+});
 
 // Pass client to React Context Provider
 const App: React.FC = () => {
@@ -28,7 +42,7 @@ const App: React.FC = () => {
     <WagmiConfig client={client}>
       <Profile />
     </WagmiConfig>
-  )
-}
+  );
+};
 
 export default App;

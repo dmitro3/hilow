@@ -1,57 +1,88 @@
+import React, { useEffect } from "react";
+import { VStack, useDisclosure, Button, Text, HStack } from "@chakra-ui/react";
+import SelectWalletModal from "./SelectWalletModal";
+import { CheckCircleIcon, WarningIcon } from "@chakra-ui/icons";
+import { Tooltip } from "@chakra-ui/react";
 import {
-  useAccount,
   useConnect,
+  useAccount,
+  useNetwork,
   useDisconnect,
-} from 'wagmi'
+  chain,
+} from "wagmi";
 
-const Profile: React.FC = () => {
-  const { data: account } = useAccount()
-  const { connect, connectors, error, isConnecting, pendingConnector } =
-    useConnect()
-  const { disconnect } = useDisconnect({
-    onSuccess(data) {
-      console.log('Success', data)
-    }, onSettled(data, error) {
-      console.log('Settled', { data, error })
-    }, onError(error) {
-      console.log('Error', error)
-    },
-  })
+export default function Home() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { status } = useConnect();
+  const { data: accountData } = useAccount();
+  const { data: networkData, switchNetwork } = useNetwork();
+  const { disconnect } = useDisconnect();
 
-  if (account) {
-    // @ts-ignore
-    return (
-      <div>
-        <div>
-          {account.address}
-        </div>
-        {/* @ts-ignore */}
-        <div>Connected to {account.connector.name}</div>
-        {/* @ts-ignore */}
-        <button onClick={disconnect}>Disconnect</button>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (switchNetwork) {
+      switchNetwork(chain.polygonMumbai.id);
+    }
+  }, [switchNetwork]);
 
   return (
-    <div>
-      {connectors.map((connector) => (
-        <button
-          disabled={!connector.ready}
-          key={connector.id}
-          onClick={() => connect(connector)}
-        >
-          {connector.name}
-          {!connector.ready && ' (unsupported)'}
-          {isConnecting &&
-            connector.id === pendingConnector?.id &&
-            ' (connecting)'}
-        </button>
-      ))}
+    <>
+      <VStack justifyContent="center" alignItems="center" h="100vh">
+        <HStack marginBottom="10px">
+          <Text
+            margin="0"
+            lineHeight="1.15"
+            fontSize={["1.5em", "2em", "3em", "4em"]}
+            fontWeight="600"
+          >
+            Let's connect your wallet and
+          </Text>
+          <Text
+            margin="0"
+            lineHeight="1.15"
+            fontSize={["1.5em", "2em", "3em", "4em"]}
+            fontWeight="600"
+            sx={{
+              background: "linear-gradient(90deg, blue 0%, lightblue 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Flip The Card!
+          </Text>
+        </HStack>
+        <HStack>
+          {status === "connected" ? (
+            <Button onClick={() => disconnect()}>Disconnect</Button>
+          ) : (
+            <Button onClick={onOpen}>Connect Wallet</Button>
+          )}
+        </HStack>
+        <VStack justifyContent="center" alignItems="center" padding="10px 0">
+          <HStack>
+            <Text>{`Connection Status: `}</Text>
+            {status === "connected" ? (
+              <CheckCircleIcon color="green" />
+            ) : (
+              <WarningIcon color="#cd5700" />
+            )}
+          </HStack>
 
-      {error && <div>{error.message}</div>}
-    </div>
-  )
+          {!accountData ? (
+            <Text>Account: No Account</Text>
+          ) : (
+            <Tooltip label={accountData.address} placement="right">
+              <Text>{`Account: ${accountData.address}`}</Text>
+            </Tooltip>
+          )}
+          <Text>{`Network name: ${
+            networkData ? networkData?.name : "No Network"
+          }`}</Text>
+          <Text>{`Network ID: ${
+            networkData ? networkData?.id : "No Network"
+          }`}</Text>
+        </VStack>
+      </VStack>
+      <SelectWalletModal isOpen={isOpen} closeModal={onClose} />
+    </>
+  );
 }
-
-export default Profile;

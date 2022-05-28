@@ -3,10 +3,11 @@ import { VStack, Text, HStack } from "@chakra-ui/react";
 import { useAccount } from "wagmi";
 import { useFlowUpdate } from "./context/FlowContext";
 import { FlowStates } from "./constants";
+import Header from "./Header";
 
 interface GameProps {}
 
-const Game: React.FC<GameProps> = ({}) => {
+const Game: React.FC<GameProps> = () => {
   const { data: accountData } = useAccount();
   const updateFlow = useFlowUpdate();
 
@@ -17,7 +18,8 @@ const Game: React.FC<GameProps> = ({}) => {
 
   return (
     <>
-      <VStack justifyContent="center" alignItems="center" h="100vh">
+      <Header />
+      <VStack justifyContent="center" alignItems="center" h="80vh">
         <HStack marginBottom="10px">
           <Text
             margin="0"

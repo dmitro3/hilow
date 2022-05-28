@@ -1,26 +1,34 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { WagmiConfig, createClient, chain, configureChains } from 'wagmi'
 
-function App() {
+import { alchemyProvider } from 'wagmi/providers/alchemy'
+
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+
+import Profile from './Profile'
+
+const alchemyId = process.env.ALCHEMY_ID
+
+const { chains, provider, webSocketProvider } = configureChains([chain.polygonMumbai], [
+  alchemyProvider({ alchemyId }),
+])
+
+// Set up client
+const client = createClient({
+  autoConnect: true,
+  connectors: [
+    new MetaMaskConnector({ chains }),
+  ],
+  provider,
+  webSocketProvider,
+})
+
+// Pass client to React Context Provider
+const App: React.FC = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <WagmiConfig client={client}>
+      <Profile />
+    </WagmiConfig>
+  )
 }
 
 export default App;

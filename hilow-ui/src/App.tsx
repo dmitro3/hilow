@@ -5,7 +5,9 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 
-import Profile from "./Profile";
+import { FlowProvider } from "./context/FlowContext";
+
+import FlowRouter from "./FlowRouter";
 
 const alchemyId = process.env.ALCHEMY_ID;
 
@@ -40,7 +42,9 @@ const client = createClient({
 const App: React.FC = () => {
   return (
     <WagmiConfig client={client}>
-      <Profile />
+      <FlowProvider>
+        <FlowRouter />
+      </FlowProvider>
     </WagmiConfig>
   );
 };

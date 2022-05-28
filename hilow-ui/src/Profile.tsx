@@ -10,6 +10,8 @@ import {
   useDisconnect,
   chain,
 } from "wagmi";
+import { useFlowUpdate } from "./context/FlowContext";
+import { FlowStates } from "./constants";
 
 export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -17,12 +19,18 @@ export default function Home() {
   const { data: accountData } = useAccount();
   const { data: networkData, switchNetwork } = useNetwork();
   const { disconnect } = useDisconnect();
+  const updateFlow = useFlowUpdate();
 
   useEffect(() => {
     if (switchNetwork) {
       switchNetwork(chain.polygonMumbai.id);
     }
   }, [switchNetwork]);
+
+  useEffect(() => {
+    if (accountData) updateFlow(FlowStates.GAME);
+    else updateFlow(FlowStates.CONNECT);
+  }, [accountData]);
 
   return (
     <>

@@ -1,8 +1,9 @@
 import React from "react";
 import { Box, Stack, Flex, Button } from "@chakra-ui/react";
-import { useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 
 const Header: React.FC = () => {
+  const { data: accountData } = useAccount();
   const { disconnect } = useDisconnect();
 
   return (
@@ -30,7 +31,7 @@ const Header: React.FC = () => {
           _hover={{ bg: "black", borderColor: "black", color: "white" }}
           onClick={() => disconnect()}
         >
-          Disconnect
+          {accountData?.address} - Disconnect
         </Button>
       </Box>
     </Flex>

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { VStack, Text, HStack, Button } from "@chakra-ui/react";
-import { useAccount, useContractWrite, useContractRead } from "wagmi";
+import { useAccount, useContractWrite, useContract, useSigner } from "wagmi";
 import { useFlowUpdate } from "./context/FlowContext";
 import { FlowStates } from "./constants";
 import Header from "./Header";
@@ -11,14 +11,13 @@ interface GameProps {}
 const Game: React.FC<GameProps> = () => {
   const { data: accountData } = useAccount();
   const updateFlow = useFlowUpdate();
+  const { data: signer } = useSigner();
   const contractConfig = {
     addressOrName: "0x4C2b3104f55735Dd5A4a57D0d0b36cBe165c47BA",
     contractInterface: HilowABI.abi,
+    signerOrProvider: signer,
   };
-  // const contractRead = useContractRead(
-  //   contractConfig,
-  //   'viewCards',
-  // )
+  const contract = useContract(contractConfig);
   const { write: tipDealer } = useContractWrite(contractConfig, "tip");
 
   useEffect(() => {
@@ -26,7 +25,10 @@ const Game: React.FC<GameProps> = () => {
     else updateFlow(FlowStates.CONNECT);
   }, [accountData]);
 
-  // useEffect(() => {console.log(contractRead)}, [contractRead])
+  const getCards = async () => {
+    const cards = await contract.viewCards();
+    console.log(cards);
+  };
 
   return (
     <>
@@ -47,6 +49,13 @@ const Game: React.FC<GameProps> = () => {
             onClick={() => tipDealer({ overrides: { value: 100000000000000 } })}
           >
             Tip
+          </Button>
+          <Button
+            variant="outline"
+            _hover={{ bg: "black", borderColor: "black", color: "white" }}
+            onClick={() => getCards()}
+          >
+            Get cards
           </Button>
         </HStack>
       </VStack>

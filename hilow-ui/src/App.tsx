@@ -8,8 +8,9 @@ import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { FlowProvider } from "./context/FlowContext";
 
 import FlowRouter from "./FlowRouter";
+import { ALCHEMY_ID } from "./config";
 
-const alchemyId = process.env.ALCHEMY_ID;
+const alchemyId = ALCHEMY_ID;
 
 const { chains, provider, webSocketProvider } = configureChains(
   [chain.polygonMumbai],

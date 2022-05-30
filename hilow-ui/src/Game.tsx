@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { VStack, Text, HStack, Button } from "@chakra-ui/react";
 import { useAccount, useContractWrite, useContract, useSigner } from "wagmi";
 import { useFlowUpdate } from "./context/FlowContext";
-import { FlowStates } from "./constants";
+import { FlowStates, HILOW_ADDRESS } from "./constants";
 import Header from "./Header";
 import HilowABI from "./abi/Hilow.json";
 
@@ -13,7 +13,7 @@ const Game: React.FC<GameProps> = () => {
   const updateFlow = useFlowUpdate();
   const { data: signer } = useSigner();
   const contractConfig = {
-    addressOrName: "0x4C2b3104f55735Dd5A4a57D0d0b36cBe165c47BA",
+    addressOrName: HILOW_ADDRESS,
     contractInterface: HilowABI.abi,
     signerOrProvider: signer,
   };

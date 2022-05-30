@@ -117,6 +117,24 @@ contract Hilow is VRFConsumerBaseV2 {
         _currentCard.reset();
     }
 
+    function isGameAlreadyStarted() public view returns (bool) {
+        Game memory currentGame = gamesByAddr[msg.sender];
+        if (
+            (currentGame.firstDraw.value > 0 &&
+                currentGame.secondDraw.value == 0)
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    function getActiveGame() public view returns (bool, Game memory) {
+        if (isGameAlreadyStarted()) {
+            return (true, gamesByAddr[msg.sender]);
+        }
+        return (false, Game(dummyCard, dummyCard));
+    }
+
     function drawCard() public {
         if (_currentCard.current() > BUFFER_WORDS) {
             drawBulkRandomCards();
@@ -125,6 +143,7 @@ contract Hilow is VRFConsumerBaseV2 {
             _currentCard.reset();
         }
 
+        require(!isGameAlreadyStarted(), "Game already started");
         uint256 currentCard = _currentCard.current();
         _currentCard.increment();
         Card memory firstDraw = cards[currentCard];

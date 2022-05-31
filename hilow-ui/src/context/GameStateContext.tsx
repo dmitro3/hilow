@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 import React, { useState, useContext } from "react";
 import { Card } from "../types";
 
@@ -30,27 +31,43 @@ const placeholderGameState: GameState = {
   bet: { higher: false, amount: 0 },
 };
 
+interface UpdateGameStateParams {
+  ready?: boolean;
+  firstCardValue?: number;
+  secondCardValue?: number;
+}
+
 const GameStateContext = React.createContext<GameState>(
   placeholderGameState as GameState
 );
 const GameStateUpdateContext = React.createContext<
-  (gameState: GameState) => void
+  (gameState: UpdateGameStateParams) => void
 >(() => void 0);
 
 interface ProviderArgs {
   children: React.ReactNode;
 }
 
-interface UpdateGameStateParams {}
-
 export const GameStateProvider = ({ children }: ProviderArgs) => {
   const [gameState, setGameState] = useState<GameState>(
     placeholderGameState as GameState
   );
 
-  const updateGameState = ({}: UpdateGameStateParams) => {
+  const updateGameState = ({
+    ready,
+    firstCardValue,
+  }: UpdateGameStateParams) => {
+    const updateState: any = {};
+    if (ready) updateState["ready"] = ready;
+    if (firstCardValue)
+      updateState["firstCard"] = {
+        loaded: true,
+        card: { value: firstCardValue, suit: "Hearts" },
+      };
+
     setGameState((prevGameState) => ({
       ...prevGameState,
+      ...updateState,
     }));
   };
 

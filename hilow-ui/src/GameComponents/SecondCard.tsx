@@ -1,3 +1,4 @@
+import { Button } from "@chakra-ui/react";
 import { ethers } from "ethers";
 import React from "react";
 import { useContract, useSigner } from "wagmi";
@@ -21,13 +22,33 @@ const SecondCard: React.FC<SecondCardProps> = ({}) => {
   return (
     <>
       {secondCard.loaded ? (
-        <div>
-          You drew the {formatCardValue(secondCard.card.value)} of{" "}
-          {secondCard.card.suit}. You bet {bet.amount} MATIC on a{" "}
-          {bet.higher ? "higher" : "lower"} card and{" "}
-          {result.isWin
-            ? `WON ${ethers.utils.formatEther(result.payoutAmount)} MATIC!`
-            : "LOST."}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <div>
+            You drew the {formatCardValue(secondCard.card.value)} of{" "}
+            {secondCard.card.suit}. You bet {bet.amount} MATIC on a{" "}
+            {bet.higher ? "higher" : "lower"} card and{" "}
+            {result.isWin
+              ? `WON ${ethers.utils.formatEther(result.payoutAmount)} MATIC!`
+              : "LOST."}
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              _hover={{ bg: "black", borderColor: "black", color: "white" }}
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              <div>Start a new game</div>
+            </Button>
+          </div>
         </div>
       ) : (
         ""

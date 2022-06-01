@@ -20,7 +20,6 @@ const GameLayout: React.FC<GameLayoutProps> = () => {
     signerOrProvider: signer,
   };
   const contract = useContract(contractConfig);
-  const { write: tipDealer } = useContractWrite(contractConfig, "tip");
   const { ready } = useGameState();
   const updateGameState = useGameStateUpdate();
 
@@ -28,7 +27,12 @@ const GameLayout: React.FC<GameLayoutProps> = () => {
     const findActiveGame = async () => {
       const [activeGameFound, activeGame]: [boolean, Game] =
         await contract.getActiveGame();
+
       const firstCardValue: number = activeGame.firstDraw.value.toNumber();
+
+      if (!activeGameFound) {
+        updateGameState({ reset: true });
+      }
 
       updateGameState({ ready: true, firstCardValue });
     };

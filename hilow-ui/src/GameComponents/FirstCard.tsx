@@ -1,4 +1,5 @@
 import { Button, CircularProgress } from "@chakra-ui/react";
+import { BigNumber } from "ethers";
 import React, { useEffect, useState } from "react";
 import { useContractWrite, useContract, useSigner, useAccount } from "wagmi";
 import HilowABI from "../abi/Hilow.json";
@@ -24,10 +25,11 @@ const FirstCard: React.FC<FirstCardProps> = ({}) => {
 
   useEffect(() => {
     try {
-      contract.on("CardDrawn", (player: string, firstDrawCard: number) => {
+      contract.on("CardDrawn", (player: string, firstDrawCard: BigNumber) => {
         console.log(player, firstDrawCard);
         if (player.toLowerCase() === accountData?.address?.toLowerCase()) {
-          updateGameState({ ready: true, firstCardValue: firstDrawCard });
+          const firstCardValue = firstDrawCard.toNumber();
+          updateGameState({ ready: true, firstCardValue });
           setLoading(false);
         }
       });

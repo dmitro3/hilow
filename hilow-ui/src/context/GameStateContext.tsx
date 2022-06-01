@@ -46,6 +46,7 @@ interface UpdateGameStateParams {
   higher?: boolean;
   isWin?: boolean;
   payoutAmount?: number;
+  reset?: boolean;
 }
 
 const GameStateContext = React.createContext<GameState>(
@@ -72,6 +73,7 @@ export const GameStateProvider = ({ children }: ProviderArgs) => {
     higher,
     isWin,
     payoutAmount,
+    reset,
   }: UpdateGameStateParams) => {
     const updateState: any = {};
     if (ready) updateState["ready"] = ready;
@@ -100,6 +102,13 @@ export const GameStateProvider = ({ children }: ProviderArgs) => {
         payoutAmount: payoutAmount ?? prevGameState.result.payoutAmount,
       },
     }));
+
+    if (reset) {
+      setGameState((prevGameState) => ({
+        ...prevGameState,
+        ...placeholderGameState,
+      }));
+    }
   };
 
   return (

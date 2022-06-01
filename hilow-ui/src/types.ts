@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 export type CardSuit = "Hearts" | "Diamonds" | "Spades" | "Clubs";
 
 export interface Card {
-  value: BigNumber | number;
+  value: number;
   suit: CardSuit;
 }
 

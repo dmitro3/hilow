@@ -29,11 +29,11 @@ contract Hilow is VRFConsumerBaseV2 {
     uint32 private constant BUFFER_WORDS = 16;
     Card dummyCard = Card(0);
 
-    event CardDrawn(address indexed player, string firstDrawCardName);
+    event CardDrawn(address indexed player, uint256 firstDrawCard);
     event GameFinished(
         address indexed player,
-        string firstDrawCardName,
-        string secondDrawCardName,
+        uint256 firstDrawCard,
+        uint256 secondDrawCard,
         bool isWin,
         uint256 payoutAmount
     );
@@ -149,7 +149,7 @@ contract Hilow is VRFConsumerBaseV2 {
         Card memory firstDraw = cards[currentCard];
         Game memory game = Game(firstDraw, dummyCard);
         gamesByAddr[msg.sender] = game;
-        emit CardDrawn(msg.sender, getCard(firstDraw));
+        emit CardDrawn(msg.sender, firstDraw.value);
     }
 
     function bet(bool higher) public payable {
@@ -194,8 +194,8 @@ contract Hilow is VRFConsumerBaseV2 {
 
         emit GameFinished(
             msg.sender,
-            getCard(currentGame.firstDraw),
-            getCard(currentGame.secondDraw),
+            currentGame.firstDraw.value,
+            currentGame.secondDraw.value,
             isWin,
             payoutAmount
         );

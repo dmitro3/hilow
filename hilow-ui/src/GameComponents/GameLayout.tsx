@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { VStack, Text, HStack, Button, Skeleton } from "@chakra-ui/react";
+import { VStack, Skeleton } from "@chakra-ui/react";
 import { useContractWrite, useContract, useSigner } from "wagmi";
 import { HILOW_ADDRESS } from "../constants";
 import Header from "./Header";

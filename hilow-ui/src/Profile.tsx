@@ -42,9 +42,9 @@ export default function Home() {
             fontSize={["1.5em", "2em", "3em", "4em"]}
             fontWeight="600"
           >
-            Let's connect your wallet and
+            Connect your wallet and Flip that Card
           </Text>
-          <Text
+          {/* <Text
             margin="0"
             lineHeight="1.15"
             fontSize={["1.5em", "2em", "3em", "4em"]}
@@ -56,7 +56,7 @@ export default function Home() {
             }}
           >
             Flip The Card!
-          </Text>
+          </Text> */}
         </HStack>
         <HStack>
           {status === "connected" ? (

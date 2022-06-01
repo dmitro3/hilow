@@ -12,11 +12,17 @@ interface BetState {
   amount: number;
 }
 
+interface ResultState {
+  isWin: boolean;
+  payoutAmount: number;
+}
+
 interface GameState {
   ready: boolean;
   firstCard: CardState;
   secondCard: CardState;
   bet: BetState;
+  result: ResultState;
 }
 
 const placeholderCard: Card = {
@@ -28,13 +34,18 @@ const placeholderGameState: GameState = {
   ready: false,
   firstCard: { card: placeholderCard, loaded: false },
   secondCard: { card: placeholderCard, loaded: false },
-  bet: { higher: false, amount: 0 },
+  bet: { higher: false, amount: 0.1 },
+  result: { isWin: false, payoutAmount: 0 },
 };
 
 interface UpdateGameStateParams {
   ready?: boolean;
   firstCardValue?: number;
   secondCardValue?: number;
+  betAmount?: number;
+  higher?: boolean;
+  isWin?: boolean;
+  payoutAmount?: number;
 }
 
 const GameStateContext = React.createContext<GameState>(
@@ -56,6 +67,11 @@ export const GameStateProvider = ({ children }: ProviderArgs) => {
   const updateGameState = ({
     ready,
     firstCardValue,
+    secondCardValue,
+    betAmount,
+    higher,
+    isWin,
+    payoutAmount,
   }: UpdateGameStateParams) => {
     const updateState: any = {};
     if (ready) updateState["ready"] = ready;
@@ -64,10 +80,25 @@ export const GameStateProvider = ({ children }: ProviderArgs) => {
         loaded: true,
         card: { value: firstCardValue, suit: "Hearts" },
       };
+    if (secondCardValue)
+      updateState["secondCard"] = {
+        loaded: true,
+        card: { value: secondCardValue, suit: "Hearts" },
+      };
 
     setGameState((prevGameState) => ({
       ...prevGameState,
       ...updateState,
+      bet: {
+        ...prevGameState.bet,
+        amount: betAmount ?? prevGameState.bet.amount,
+        higher: higher ?? prevGameState.bet.higher,
+      },
+      result: {
+        ...prevGameState.result,
+        isWin: isWin ?? prevGameState.result.isWin,
+        payoutAmount: payoutAmount ?? prevGameState.result.payoutAmount,
+      },
     }));
   };
 

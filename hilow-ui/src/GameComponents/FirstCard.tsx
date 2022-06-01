@@ -51,9 +51,9 @@ const FirstCard: React.FC<FirstCardProps> = ({}) => {
             setLoading(true);
             drawFirstCard();
           }}
+          disabled={loading}
         >
           <div>
-            {" "}
             Draw Card{" "}
             {loading ? (
               <CircularProgress

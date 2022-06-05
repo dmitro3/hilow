@@ -17,11 +17,11 @@ const SecondCard: React.FC<SecondCardProps> = ({}) => {
     signerOrProvider: signer,
   };
   const contract = useContract(contractConfig);
-  const { secondCard, bet, result } = useGameState();
+  const { firstCard, secondCard, bet, result } = useGameState();
 
   return (
     <>
-      {secondCard.loaded ? (
+      {firstCard.loaded && secondCard.loaded ? (
         <div
           style={{
             display: "flex",

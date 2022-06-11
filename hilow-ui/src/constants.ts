@@ -3,4 +3,4 @@ export const FlowStates = {
   GAME: "GAME",
 };
 
-export const HILOW_ADDRESS = "0x9859b05e17bB38bB09Ce45eE79629a77B70Ee65E";
+export const HILOW_ADDRESS = "0x6D5EdFcb524D76c77718BB5eeE7656F516a7cd1C";

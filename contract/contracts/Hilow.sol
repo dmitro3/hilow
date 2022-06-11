@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.10;
 
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Hilow is VRFConsumerBaseV2 {
     struct Card {
@@ -28,6 +29,8 @@ contract Hilow is VRFConsumerBaseV2 {
     uint32 private constant MAX_WORDS = 20;
     uint32 private constant BUFFER_WORDS = 16;
     Card dummyCard = Card(0);
+    mapping(uint256 => uint256) private LOW_BET_PAYOFFS;
+    mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
 
     event CardDrawn(address indexed player, uint256 firstDrawCard);
     event GameFinished(
@@ -46,6 +49,36 @@ contract Hilow is VRFConsumerBaseV2 {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_owner = payable(msg.sender);
         s_subscriptionId = subscriptionId;
+
+        // Set low bet payoffs
+        LOW_BET_PAYOFFS[1] = 300;
+        LOW_BET_PAYOFFS[2] = 285;
+        LOW_BET_PAYOFFS[3] = 270;
+        LOW_BET_PAYOFFS[4] = 253;
+        LOW_BET_PAYOFFS[5] = 236;
+        LOW_BET_PAYOFFS[6] = 219;
+        LOW_BET_PAYOFFS[7] = 202;
+        LOW_BET_PAYOFFS[8] = 185;
+        LOW_BET_PAYOFFS[9] = 168;
+        LOW_BET_PAYOFFS[10] = 151;
+        LOW_BET_PAYOFFS[11] = 134;
+        LOW_BET_PAYOFFS[12] = 117;
+        LOW_BET_PAYOFFS[13] = 100;
+
+        // Set low bet payoffs
+        HIGH_BET_PAYOFFS[1] = 100;
+        HIGH_BET_PAYOFFS[2] = 117;
+        HIGH_BET_PAYOFFS[3] = 134;
+        HIGH_BET_PAYOFFS[4] = 151;
+        HIGH_BET_PAYOFFS[5] = 168;
+        HIGH_BET_PAYOFFS[6] = 185;
+        HIGH_BET_PAYOFFS[7] = 202;
+        HIGH_BET_PAYOFFS[8] = 219;
+        HIGH_BET_PAYOFFS[9] = 236;
+        HIGH_BET_PAYOFFS[10] = 253;
+        HIGH_BET_PAYOFFS[11] = 270;
+        HIGH_BET_PAYOFFS[12] = 285;
+        HIGH_BET_PAYOFFS[13] = 300;
     }
 
     modifier onlyOwner() {
@@ -86,6 +119,16 @@ contract Hilow is VRFConsumerBaseV2 {
         returns (Game memory)
     {
         return gamesByAddr[addr];
+    }
+
+    function viewPayoffForBet(bool higher, uint256 firstCard)
+        public
+        view
+        returns (uint256)
+    {
+        require(firstCard >= 1 && firstCard <= 13, "Invalid first card");
+        if (higher) return HIGH_BET_PAYOFFS[firstCard];
+        else return LOW_BET_PAYOFFS[firstCard];
     }
 
     function tip() public payable {
@@ -152,6 +195,72 @@ contract Hilow is VRFConsumerBaseV2 {
         emit CardDrawn(msg.sender, firstDraw.value);
     }
 
+    function checkWin(Game memory currentGame, bool higher)
+        private
+        view
+        returns (bool, uint256)
+    {
+        bool isWin;
+        if (higher) {
+            if (currentGame.firstDraw.value == 1) {
+                if (
+                    currentGame.secondDraw.value > currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            } else if (currentGame.firstDraw.value == 13) {
+                if (
+                    currentGame.secondDraw.value == currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            } else {
+                if (
+                    currentGame.secondDraw.value >= currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            }
+        } else {
+            if (currentGame.firstDraw.value == 1) {
+                if (
+                    currentGame.secondDraw.value == currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            } else if (currentGame.firstDraw.value == 13) {
+                if (
+                    currentGame.secondDraw.value < currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            } else {
+                if (
+                    currentGame.secondDraw.value <= currentGame.firstDraw.value
+                ) {
+                    isWin = true;
+                }
+            }
+        }
+
+        uint256 payoutAmount;
+        if (isWin) {
+            if (higher) {
+                payoutAmount = SafeMath.div(
+                    HIGH_BET_PAYOFFS[currentGame.firstDraw.value] * msg.value,
+                    100
+                );
+            } else {
+                payoutAmount = SafeMath.div(
+                    LOW_BET_PAYOFFS[currentGame.firstDraw.value] * msg.value,
+                    100
+                );
+            }
+        }
+
+        return (isWin, payoutAmount);
+    }
+
     function bet(bool higher) public payable {
         Game memory currentGame = gamesByAddr[msg.sender];
         require(
@@ -173,19 +282,9 @@ contract Hilow is VRFConsumerBaseV2 {
         gamesByAddr[msg.sender] = currentGame;
 
         bool isWin;
-        if (higher) {
-            if (currentGame.secondDraw.value >= currentGame.firstDraw.value) {
-                isWin = true;
-            }
-        } else {
-            if (currentGame.secondDraw.value <= currentGame.firstDraw.value) {
-                isWin = true;
-            }
-        }
-
         uint256 payoutAmount;
+        (isWin, payoutAmount) = checkWin(currentGame, higher);
         if (isWin) {
-            payoutAmount = msg.value * 2;
             (bool success, bytes memory data) = payable(msg.sender).call{
                 value: payoutAmount
             }("Sending payout");
@@ -199,25 +298,5 @@ contract Hilow is VRFConsumerBaseV2 {
             isWin,
             payoutAmount
         );
-    }
-
-    function getCard(Card memory card) private pure returns (string memory) {
-        string[13] memory cardNames = [
-            "A",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "10",
-            "J",
-            "Q",
-            "K"
-        ];
-
-        return cardNames[card.value - 1];
     }
 }

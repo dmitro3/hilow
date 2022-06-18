@@ -12,9 +12,17 @@ contract Hilow is VRFConsumerBaseV2 {
         uint256 value;
     }
 
-    struct Game {
+    struct GameCards {
         Card firstDraw;
         Card secondDraw;
+        Card thirdDraw;
+    }
+
+    struct Game {
+        GameCards cards;
+        uint256 betAmount;
+        bool firstPrediction;
+        bool secondPrediction;
     }
 
     VRFCoordinatorV2Interface COORDINATOR;
@@ -33,11 +41,19 @@ contract Hilow is VRFConsumerBaseV2 {
     mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
 
     event CardDrawn(address indexed player, uint256 firstDrawCard);
+    event FirstBetMade(
+        address indexed player,
+        uint256 firstDrawCard,
+        uint256 secondDrawCard,
+        bool isWin
+    );
     event GameFinished(
         address indexed player,
         uint256 firstDrawCard,
         uint256 secondDrawCard,
+        uint256 thirdDrawCard,
         bool isWin,
+        uint256 payoutMultiplier,
         uint256 payoutAmount
     );
     event DealerTipped(address indexed tipper, uint256 amount);
@@ -161,10 +177,10 @@ contract Hilow is VRFConsumerBaseV2 {
     }
 
     function isGameAlreadyStarted() public view returns (bool) {
-        Game memory currentGame = gamesByAddr[msg.sender];
+        GameCards memory currentGame = gamesByAddr[msg.sender].cards;
         if (
             (currentGame.firstDraw.value > 0 &&
-                currentGame.secondDraw.value == 0)
+                currentGame.thirdDraw.value == 0)
         ) {
             return true;
         }
@@ -175,7 +191,10 @@ contract Hilow is VRFConsumerBaseV2 {
         if (isGameAlreadyStarted()) {
             return (true, gamesByAddr[msg.sender]);
         }
-        return (false, Game(dummyCard, dummyCard));
+        return (
+            false,
+            Game(GameCards(dummyCard, dummyCard, dummyCard), 0, false, false)
+        );
     }
 
     function drawCard() public {
@@ -190,85 +209,75 @@ contract Hilow is VRFConsumerBaseV2 {
         uint256 currentCard = _currentCard.current();
         _currentCard.increment();
         Card memory firstDraw = cards[currentCard];
-        Game memory game = Game(firstDraw, dummyCard);
+        GameCards memory gameCards = GameCards(firstDraw, dummyCard, dummyCard);
+        Game memory game = Game(gameCards, 0, false, false);
         gamesByAddr[msg.sender] = game;
         emit CardDrawn(msg.sender, firstDraw.value);
     }
 
-    function checkWin(Game memory currentGame, bool higher)
-        private
-        view
-        returns (bool, uint256)
-    {
+    function checkWin(
+        uint256 cardOne,
+        uint256 cardTwo,
+        bool higher
+    ) private pure returns (bool) {
         bool isWin;
         if (higher) {
-            if (currentGame.firstDraw.value == 1) {
-                if (
-                    currentGame.secondDraw.value > currentGame.firstDraw.value
-                ) {
+            if (cardOne == 1) {
+                if (cardTwo > cardOne) {
                     isWin = true;
                 }
-            } else if (currentGame.firstDraw.value == 13) {
-                if (
-                    currentGame.secondDraw.value == currentGame.firstDraw.value
-                ) {
+            } else if (cardOne == 13) {
+                if (cardTwo == cardOne) {
                     isWin = true;
                 }
             } else {
-                if (
-                    currentGame.secondDraw.value >= currentGame.firstDraw.value
-                ) {
+                if (cardTwo >= cardOne) {
                     isWin = true;
                 }
             }
         } else {
-            if (currentGame.firstDraw.value == 1) {
-                if (
-                    currentGame.secondDraw.value == currentGame.firstDraw.value
-                ) {
+            if (cardOne == 1) {
+                if (cardTwo == cardOne) {
                     isWin = true;
                 }
-            } else if (currentGame.firstDraw.value == 13) {
-                if (
-                    currentGame.secondDraw.value < currentGame.firstDraw.value
-                ) {
+            } else if (cardOne == 13) {
+                if (cardTwo < cardOne) {
                     isWin = true;
                 }
             } else {
-                if (
-                    currentGame.secondDraw.value <= currentGame.firstDraw.value
-                ) {
+                if (cardTwo <= cardOne) {
                     isWin = true;
                 }
             }
         }
 
-        uint256 payoutAmount;
-        if (isWin) {
-            if (higher) {
-                payoutAmount = SafeMath.div(
-                    HIGH_BET_PAYOFFS[currentGame.firstDraw.value] * msg.value,
-                    100
-                );
-            } else {
-                payoutAmount = SafeMath.div(
-                    LOW_BET_PAYOFFS[currentGame.firstDraw.value] * msg.value,
-                    100
-                );
-            }
-        }
-
-        return (isWin, payoutAmount);
+        return isWin;
     }
 
-    function bet(bool higher) public payable {
+    function getPayoutMultiplier(uint256 cardOne, bool higher)
+        private
+        view
+        returns (uint256)
+    {
+        uint256 multiplier;
+        if (higher) {
+            multiplier = HIGH_BET_PAYOFFS[cardOne];
+        } else {
+            multiplier = LOW_BET_PAYOFFS[cardOne];
+        }
+
+        return multiplier;
+    }
+
+    function makeFirstBet(bool higher) public payable {
         Game memory currentGame = gamesByAddr[msg.sender];
+        GameCards memory currentGameCards = currentGame.cards;
         require(
-            currentGame.firstDraw.value > 0,
+            currentGameCards.firstDraw.value > 0,
             "First card should be drawn for the game"
         );
         require(
-            currentGame.secondDraw.value == 0,
+            currentGameCards.secondDraw.value == 0,
             "Second card has already been drawn for the game"
         );
         if (_currentCard.current() > MAX_WORDS) {
@@ -278,13 +287,86 @@ contract Hilow is VRFConsumerBaseV2 {
         uint256 currentCard = _currentCard.current();
         _currentCard.increment();
         Card memory secondDraw = cards[currentCard];
-        currentGame.secondDraw = secondDraw;
-        gamesByAddr[msg.sender] = currentGame;
+        currentGameCards.secondDraw = secondDraw;
+        currentGame.betAmount = msg.value;
+        currentGame.firstPrediction = higher;
+        gamesByAddr[msg.sender] = Game(
+            currentGameCards,
+            currentGame.betAmount,
+            currentGame.firstPrediction,
+            false
+        );
 
         bool isWin;
+        isWin = checkWin(
+            currentGameCards.firstDraw.value,
+            currentGameCards.secondDraw.value,
+            higher
+        );
+        // TODO: Reset to dummy game if not a win
+
+        emit FirstBetMade(
+            msg.sender,
+            currentGameCards.firstDraw.value,
+            currentGameCards.secondDraw.value,
+            isWin
+        );
+    }
+
+    function makeSecondBet(bool higher) public {
+        Game memory currentGame = gamesByAddr[msg.sender];
+        GameCards memory currentGameCards = currentGame.cards;
+        require(
+            currentGameCards.firstDraw.value > 0 &&
+                currentGameCards.secondDraw.value > 0,
+            "First and second card should be drawn for the game"
+        );
+        require(
+            currentGameCards.thirdDraw.value == 0,
+            "Third card has already been drawn for the game"
+        );
+        if (_currentCard.current() > MAX_WORDS) {
+            _currentCard.reset();
+        }
+
+        uint256 currentCard = _currentCard.current();
+        _currentCard.increment();
+        Card memory thirdDraw = cards[currentCard];
+        currentGameCards.thirdDraw = thirdDraw;
+        currentGame.secondPrediction = higher;
+        gamesByAddr[msg.sender] = Game(
+            currentGameCards,
+            currentGame.betAmount,
+            currentGame.firstPrediction,
+            currentGame.secondPrediction
+        );
+
+        bool isFirstWin = checkWin(
+            currentGameCards.firstDraw.value,
+            currentGameCards.secondDraw.value,
+            currentGame.firstPrediction
+        );
+        bool isSecondWin = checkWin(
+            currentGameCards.secondDraw.value,
+            currentGameCards.thirdDraw.value,
+            currentGame.secondPrediction
+        );
+
+        uint256 payoutMultiplier;
         uint256 payoutAmount;
-        (isWin, payoutAmount) = checkWin(currentGame, higher);
-        if (isWin) {
+
+        if (isFirstWin && isSecondWin) {
+            uint256 multiplier1 = getPayoutMultiplier(
+                currentGameCards.firstDraw.value,
+                currentGame.firstPrediction
+            );
+            uint256 multiplier2 = getPayoutMultiplier(
+                currentGameCards.secondDraw.value,
+                currentGame.secondPrediction
+            );
+            payoutAmount =
+                (currentGame.betAmount * multiplier1 * multiplier2) /
+                10000;
             (bool success, bytes memory data) = payable(msg.sender).call{
                 value: payoutAmount
             }("Sending payout");
@@ -293,9 +375,11 @@ contract Hilow is VRFConsumerBaseV2 {
 
         emit GameFinished(
             msg.sender,
-            currentGame.firstDraw.value,
-            currentGame.secondDraw.value,
-            isWin,
+            currentGameCards.firstDraw.value,
+            currentGameCards.secondDraw.value,
+            currentGameCards.thirdDraw.value,
+            isSecondWin,
+            payoutMultiplier,
             payoutAmount
         );
     }

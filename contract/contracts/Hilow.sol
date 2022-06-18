@@ -68,32 +68,32 @@ contract Hilow is VRFConsumerBaseV2 {
 
         // Set low bet payoffs
         LOW_BET_PAYOFFS[1] = 300;
-        LOW_BET_PAYOFFS[2] = 285;
-        LOW_BET_PAYOFFS[3] = 270;
-        LOW_BET_PAYOFFS[4] = 253;
-        LOW_BET_PAYOFFS[5] = 236;
-        LOW_BET_PAYOFFS[6] = 219;
-        LOW_BET_PAYOFFS[7] = 202;
-        LOW_BET_PAYOFFS[8] = 185;
-        LOW_BET_PAYOFFS[9] = 168;
-        LOW_BET_PAYOFFS[10] = 151;
-        LOW_BET_PAYOFFS[11] = 134;
-        LOW_BET_PAYOFFS[12] = 117;
+        LOW_BET_PAYOFFS[2] = 192;
+        LOW_BET_PAYOFFS[3] = 184;
+        LOW_BET_PAYOFFS[4] = 176;
+        LOW_BET_PAYOFFS[5] = 169;
+        LOW_BET_PAYOFFS[6] = 161;
+        LOW_BET_PAYOFFS[7] = 153;
+        LOW_BET_PAYOFFS[8] = 146;
+        LOW_BET_PAYOFFS[9] = 138;
+        LOW_BET_PAYOFFS[10] = 130;
+        LOW_BET_PAYOFFS[11] = 123;
+        LOW_BET_PAYOFFS[12] = 115;
         LOW_BET_PAYOFFS[13] = 100;
 
         // Set low bet payoffs
         HIGH_BET_PAYOFFS[1] = 100;
-        HIGH_BET_PAYOFFS[2] = 117;
-        HIGH_BET_PAYOFFS[3] = 134;
-        HIGH_BET_PAYOFFS[4] = 151;
-        HIGH_BET_PAYOFFS[5] = 168;
-        HIGH_BET_PAYOFFS[6] = 185;
-        HIGH_BET_PAYOFFS[7] = 202;
-        HIGH_BET_PAYOFFS[8] = 219;
-        HIGH_BET_PAYOFFS[9] = 236;
-        HIGH_BET_PAYOFFS[10] = 253;
-        HIGH_BET_PAYOFFS[11] = 270;
-        HIGH_BET_PAYOFFS[12] = 285;
+        HIGH_BET_PAYOFFS[2] = 115;
+        HIGH_BET_PAYOFFS[3] = 123;
+        HIGH_BET_PAYOFFS[4] = 130;
+        HIGH_BET_PAYOFFS[5] = 138;
+        HIGH_BET_PAYOFFS[6] = 146;
+        HIGH_BET_PAYOFFS[7] = 153;
+        HIGH_BET_PAYOFFS[8] = 161;
+        HIGH_BET_PAYOFFS[9] = 169;
+        HIGH_BET_PAYOFFS[10] = 176;
+        HIGH_BET_PAYOFFS[11] = 184;
+        HIGH_BET_PAYOFFS[12] = 192;
         HIGH_BET_PAYOFFS[13] = 300;
     }
 

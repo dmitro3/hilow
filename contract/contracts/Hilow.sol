@@ -36,7 +36,10 @@ contract Hilow is VRFConsumerBaseV2 {
     uint16 constant requestConfirmations = 3;
     uint32 private constant MAX_WORDS = 20;
     uint32 private constant BUFFER_WORDS = 16;
-    Card dummyCard = Card(0);
+    Card placeholderCard = Card(0);
+    GameCards placeholderGameCards =
+        GameCards(placeholderCard, placeholderCard, placeholderCard);
+    Game placeholderGame = Game(placeholderGameCards, 0, false, false);
     mapping(uint256 => uint256) private LOW_BET_PAYOFFS;
     mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
 
@@ -191,10 +194,7 @@ contract Hilow is VRFConsumerBaseV2 {
         if (isGameAlreadyStarted()) {
             return (true, gamesByAddr[msg.sender]);
         }
-        return (
-            false,
-            Game(GameCards(dummyCard, dummyCard, dummyCard), 0, false, false)
-        );
+        return (false, placeholderGame);
     }
 
     function drawCard() public {
@@ -209,7 +209,11 @@ contract Hilow is VRFConsumerBaseV2 {
         uint256 currentCard = _currentCard.current();
         _currentCard.increment();
         Card memory firstDraw = cards[currentCard];
-        GameCards memory gameCards = GameCards(firstDraw, dummyCard, dummyCard);
+        GameCards memory gameCards = GameCards(
+            firstDraw,
+            placeholderCard,
+            placeholderCard
+        );
         Game memory game = Game(gameCards, 0, false, false);
         gamesByAddr[msg.sender] = game;
         emit CardDrawn(msg.sender, firstDraw.value);
@@ -303,7 +307,9 @@ contract Hilow is VRFConsumerBaseV2 {
             currentGameCards.secondDraw.value,
             higher
         );
-        // TODO: Reset to dummy game if not a win
+        if (!isWin) {
+            gamesByAddr[msg.sender] = placeholderGame;
+        }
 
         emit FirstBetMade(
             msg.sender,

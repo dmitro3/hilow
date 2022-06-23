@@ -36,12 +36,18 @@ contract Hilow is VRFConsumerBaseV2 {
     uint16 constant requestConfirmations = 3;
     uint32 private constant MAX_WORDS = 20;
     uint32 private constant BUFFER_WORDS = 16;
+    address payable teamPayoutContractAddress;
+    address payable supportersPayoutContractAddress;
     Card placeholderCard = Card(0);
     GameCards placeholderGameCards =
         GameCards(placeholderCard, placeholderCard, placeholderCard);
     Game placeholderGame = Game(placeholderGameCards, 0, false, false);
     mapping(uint256 => uint256) private LOW_BET_PAYOFFS;
     mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
+    Card[MAX_WORDS] private cards;
+    using Counters for Counters.Counter;
+    Counters.Counter private _currentCard;
+    mapping(address => Game) private gamesByAddr;
 
     event CardDrawn(address indexed player, uint256 firstDrawCard);
     event FirstBetMade(
@@ -61,13 +67,18 @@ contract Hilow is VRFConsumerBaseV2 {
     );
     event DealerTipped(address indexed tipper, uint256 amount);
 
-    constructor(uint64 subscriptionId)
-        payable
-        VRFConsumerBaseV2(vrfCoordinator)
-    {
+    constructor(
+        uint64 subscriptionId,
+        address payable _teamPayoutContractAddress,
+        address payable _supportersPayoutContractAddress
+    ) payable VRFConsumerBaseV2(vrfCoordinator) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_owner = payable(msg.sender);
         s_subscriptionId = subscriptionId;
+        teamPayoutContractAddress = payable(_teamPayoutContractAddress);
+        supportersPayoutContractAddress = payable(
+            _supportersPayoutContractAddress
+        );
 
         // Set low bet payoffs
         LOW_BET_PAYOFFS[1] = 300;
@@ -113,10 +124,17 @@ contract Hilow is VRFConsumerBaseV2 {
         require(success, "Withdraw failed");
     }
 
-    Card[MAX_WORDS] private cards;
-    using Counters for Counters.Counter;
-    Counters.Counter private _currentCard;
-    mapping(address => Game) private gamesByAddr;
+    function getTeamPayoutContractAddress() public view returns (address) {
+        return teamPayoutContractAddress;
+    }
+
+    function getSupportersPayoutContractAddress()
+        public
+        view
+        returns (address)
+    {
+        return supportersPayoutContractAddress;
+    }
 
     function viewCards()
         public
@@ -284,6 +302,7 @@ contract Hilow is VRFConsumerBaseV2 {
             currentGameCards.secondDraw.value == 0,
             "Second card has already been drawn for the game"
         );
+        payCommission();
         if (_currentCard.current() > MAX_WORDS) {
             _currentCard.reset();
         }
@@ -388,5 +407,21 @@ contract Hilow is VRFConsumerBaseV2 {
             payoutMultiplier,
             payoutAmount
         );
+    }
+
+    function payCommission() internal {
+        uint256 teamCommission = SafeMath.div(SafeMath.mul(msg.value, 1), 100); // 1% to team
+        uint256 supportersCommission = SafeMath.div(
+            SafeMath.mul(msg.value, 35),
+            1000
+        ); // 3.5% to supporters
+
+        (bool tsuccess, bytes memory tdata) = payable(teamPayoutContractAddress)
+            .call{value: teamCommission}("Sending team commission");
+        require(tsuccess, "Team commission payout failed");
+        (bool ssuccess, bytes memory sdata) = payable(
+            supportersPayoutContractAddress
+        ).call{value: supportersCommission}("Sending supporters commission");
+        require(ssuccess, "Supporters commission payout failed");
     }
 }

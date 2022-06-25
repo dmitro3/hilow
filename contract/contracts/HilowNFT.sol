@@ -30,6 +30,10 @@ contract HilowSupporterNFT is ERC721URIStorage {
         owner = payable(msg.sender);
     }
 
+    receive() external payable {}
+
+    fallback() external payable {}
+
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
@@ -85,6 +89,14 @@ contract HilowSupporterNFT is ERC721URIStorage {
             currentId,
             msg.sender
         );
+        require(
+            gameContractAddress != address(0),
+            "Game contract address should be set"
+        );
+        (bool success, bytes memory data) = payable(gameContractAddress).call{
+            value: msg.value
+        }("Return remaining funds to game pool");
+        require(success, "Fund transfer to game contract failed");
     }
 
     function getCardName(uint256 value) internal pure returns (string memory) {

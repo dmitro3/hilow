@@ -111,6 +111,10 @@ contract Hilow is VRFConsumerBaseV2 {
         HIGH_BET_PAYOFFS[13] = 300;
     }
 
+    receive() external payable {}
+
+    fallback() external payable {}
+
     modifier onlyOwner() {
         require(msg.sender == s_owner);
         _;
@@ -412,9 +416,9 @@ contract Hilow is VRFConsumerBaseV2 {
     function payCommission() internal {
         uint256 teamCommission = SafeMath.div(SafeMath.mul(msg.value, 1), 100); // 1% to team
         uint256 supportersCommission = SafeMath.div(
-            SafeMath.mul(msg.value, 35),
-            1000
-        ); // 3.5% to supporters
+            SafeMath.mul(msg.value, 4),
+            100
+        ); // 4% to supporters
 
         (bool tsuccess, bytes memory tdata) = payable(teamPayoutContractAddress)
             .call{value: teamCommission}("Sending team commission");

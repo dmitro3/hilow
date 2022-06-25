@@ -5,12 +5,14 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./PayableContract.sol";
 
 import {Base64} from "./libraries/Base64.sol";
 
-contract HilowSupporterNFT is ERC721URIStorage {
+contract HilowSupporterNFT is ERC721URIStorage, PayableHilowContract {
     address owner;
-    address payable private gameContractAddress;
+    address internal _gameContractAddress;
+    PayableHilowContract gameContract;
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     uint256 TOTAL_NFTS = 676;
@@ -39,15 +41,9 @@ contract HilowSupporterNFT is ERC721URIStorage {
         _;
     }
 
-    function setGameContractAddress(address payable _gameContractAddress)
-        public
-        onlyOwner
-    {
-        gameContractAddress = payable(_gameContractAddress);
-    }
-
-    function getGameContractAddress() public view returns (address) {
-        return gameContractAddress;
+    function setGameContract(address payable _address) public onlyOwner {
+        _gameContractAddress = _address;
+        gameContract = PayableHilowContract(_gameContractAddress);
     }
 
     function getMintedCount() public view returns (uint256) {
@@ -90,12 +86,10 @@ contract HilowSupporterNFT is ERC721URIStorage {
             msg.sender
         );
         require(
-            gameContractAddress != address(0),
+            _gameContractAddress != address(0),
             "Game contract address should be set"
         );
-        (bool success, bytes memory data) = payable(gameContractAddress).call{
-            value: msg.value
-        }("Return remaining funds to game pool");
+        bool success = gameContract.sendFunds{value: msg.value}();
         require(success, "Fund transfer to game contract failed");
     }
 
@@ -121,7 +115,7 @@ contract HilowSupporterNFT is ERC721URIStorage {
 
     function payoutSupporters() public onlyOwner {
         require(
-            gameContractAddress != address(0),
+            _gameContractAddress != address(0),
             "Game contract address should be set"
         );
         uint256 balance = address(this).balance;
@@ -137,9 +131,7 @@ contract HilowSupporterNFT is ERC721URIStorage {
         }
 
         uint256 postPayoutBalance = address(this).balance;
-        (bool success, bytes memory data) = payable(gameContractAddress).call{
-            value: postPayoutBalance
-        }("Return remaining funds to game pool");
+        bool success = gameContract.sendFunds{value: postPayoutBalance}();
         require(success, "Return funds failed");
     }
 }

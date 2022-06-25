@@ -6,8 +6,9 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./PayableContract.sol";
 
-contract Hilow is VRFConsumerBaseV2 {
+contract Hilow is VRFConsumerBaseV2, PayableHilowContract {
     struct Card {
         uint256 value;
     }
@@ -36,8 +37,8 @@ contract Hilow is VRFConsumerBaseV2 {
     uint16 constant requestConfirmations = 3;
     uint32 private constant MAX_WORDS = 20;
     uint32 private constant BUFFER_WORDS = 16;
-    address payable teamPayoutContractAddress;
-    address payable supportersPayoutContractAddress;
+    PayableHilowContract teamContract;
+    PayableHilowContract supportersContract;
     Card placeholderCard = Card(0);
     GameCards placeholderGameCards =
         GameCards(placeholderCard, placeholderCard, placeholderCard);
@@ -75,8 +76,8 @@ contract Hilow is VRFConsumerBaseV2 {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_owner = payable(msg.sender);
         s_subscriptionId = subscriptionId;
-        teamPayoutContractAddress = payable(_teamPayoutContractAddress);
-        supportersPayoutContractAddress = payable(
+        teamContract = PayableHilowContract(_teamPayoutContractAddress);
+        supportersContract = PayableHilowContract(
             _supportersPayoutContractAddress
         );
 
@@ -126,18 +127,6 @@ contract Hilow is VRFConsumerBaseV2 {
             "Withdrawing funds"
         );
         require(success, "Withdraw failed");
-    }
-
-    function getTeamPayoutContractAddress() public view returns (address) {
-        return teamPayoutContractAddress;
-    }
-
-    function getSupportersPayoutContractAddress()
-        public
-        view
-        returns (address)
-    {
-        return supportersPayoutContractAddress;
     }
 
     function viewCards()
@@ -420,12 +409,11 @@ contract Hilow is VRFConsumerBaseV2 {
             100
         ); // 4% to supporters
 
-        (bool tsuccess, bytes memory tdata) = payable(teamPayoutContractAddress)
-            .call{value: teamCommission}("Sending team commission");
-        require(tsuccess, "Team commission payout failed");
-        (bool ssuccess, bytes memory sdata) = payable(
-            supportersPayoutContractAddress
-        ).call{value: supportersCommission}("Sending supporters commission");
-        require(ssuccess, "Supporters commission payout failed");
+        bool tsuccess = teamContract.sendFunds{value: teamCommission}();
+        require(tsuccess, "Team commission payout failed.");
+        bool ssuccess = supportersContract.sendFunds{
+            value: supportersCommission
+        }();
+        require(ssuccess, "Supporters commission payout failed.");
     }
 }

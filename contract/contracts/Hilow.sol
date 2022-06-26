@@ -37,6 +37,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     uint16 constant requestConfirmations = 3;
     uint32 private constant MAX_WORDS = 20;
     uint32 private constant BUFFER_WORDS = 16;
+    uint256 MAX_BET_AMOUNT = 50 * 10**15;
     PayableHilowContract teamContract;
     PayableHilowContract supportersContract;
     Card placeholderCard = Card(0);
@@ -278,6 +279,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     }
 
     function makeFirstBet(bool higher) public payable {
+        require(msg.value <= MAX_BET_AMOUNT, "Max bet amount exceeded");
         Game memory currentGame = gamesByAddr[msg.sender];
         GameCards memory currentGameCards = currentGame.cards;
         require(

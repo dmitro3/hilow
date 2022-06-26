@@ -6,9 +6,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PayableContract.sol";
 
-contract Hilow is VRFConsumerBaseV2, PayableHilowContract {
+contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     struct Card {
         uint256 value;
     }
@@ -28,7 +29,6 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract {
 
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
-    address s_owner;
     address constant vrfCoordinator =
         0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
     bytes32 constant s_keyHash =
@@ -74,7 +74,6 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract {
         address payable _supportersPayoutContractAddress
     ) payable VRFConsumerBaseV2(vrfCoordinator) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
-        s_owner = payable(msg.sender);
         s_subscriptionId = subscriptionId;
         teamContract = PayableHilowContract(_teamPayoutContractAddress);
         supportersContract = PayableHilowContract(
@@ -114,18 +113,12 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract {
 
     receive() external payable {}
 
-    fallback() external payable {}
-
-    modifier onlyOwner() {
-        require(msg.sender == s_owner);
-        _;
-    }
-
     function withdraw() public onlyOwner {
         uint256 balance = address(this).balance;
-        (bool success, bytes memory data) = s_owner.call{value: balance}(
-            "Withdrawing funds"
-        );
+        address hilowOwner = owner();
+        (bool success, bytes memory data) = payable(hilowOwner).call{
+            value: balance
+        }("Withdrawing funds");
         require(success, "Withdraw failed");
     }
 

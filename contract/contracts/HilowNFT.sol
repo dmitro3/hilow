@@ -3,14 +3,14 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 import "./PayableContract.sol";
 
 import {Base64} from "./libraries/Base64.sol";
 
-contract HilowSupporterNFT is ERC721URIStorage, PayableHilowContract {
-    address owner;
+contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
     address internal _gameContractAddress;
     PayableHilowContract gameContract;
     using Counters for Counters.Counter;
@@ -28,18 +28,9 @@ contract HilowSupporterNFT is ERC721URIStorage, PayableHilowContract {
         suits[1] = unicode"♠";
         suits[2] = unicode"♥";
         suits[3] = unicode"♣";
-
-        owner = payable(msg.sender);
     }
 
     receive() external payable {}
-
-    fallback() external payable {}
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
 
     function setGameContract(address payable _address) public onlyOwner {
         _gameContractAddress = _address;
@@ -131,7 +122,7 @@ contract HilowSupporterNFT is ERC721URIStorage, PayableHilowContract {
         }
 
         uint256 postPayoutBalance = address(this).balance;
-        bool success = gameContract.sendFunds{value: postPayoutBalance}();
-        require(success, "Return funds failed");
+        bool rsuccess = gameContract.sendFunds{value: postPayoutBalance}();
+        require(rsuccess, "Return funds failed");
     }
 }

@@ -10,10 +10,6 @@ contract HilowCommissionsPayout is PaymentSplitter, PayableHilowContract {
     {}
 
     receive() external payable override {}
-
-    fallback() external payable {}
-
-    function tip() public payable {}
 }
 
 // ["0xEB41A1304BDF757D660C6685Fd063E827892585b", "0x963d1821b0C1cA2787F9E273dF1e501007e74A47"]
@@ -28,8 +24,4 @@ contract HilowSupporterNFTRoyaltyPayout is
     {}
 
     receive() external payable override {}
-
-    fallback() external payable {}
-
-    function tip() public payable {}
 }

@@ -16,9 +16,12 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     uint256 TOTAL_NFTS = 676;
+    uint256 MIN_MINT_PRICE = 10 * 10**15;
+    uint256 MAX_MINT_PER_WALLET = 3;
     uint256 private mintedCount;
     uint256[] mintedTokenIds;
     mapping(uint256 => string) suits;
+    mapping(address => uint256) mintCountByAddress;
 
     event NFTMinted(address owner, uint256 tokenId);
 
@@ -43,6 +46,11 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
 
     function mint() public payable {
         require(mintedCount < TOTAL_NFTS, "No more NFTs can be minted!");
+        require(msg.value >= MIN_MINT_PRICE, "Not enough MATIC paid");
+        require(
+            mintCountByAddress[msg.sender] < MAX_MINT_PER_WALLET,
+            "No more NFTs can be minted with this wallet"
+        );
         uint256 currentId = _tokenIds.current();
         _safeMint(msg.sender, currentId);
         string memory suit = suits[currentId / 169];
@@ -70,6 +78,7 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
         _tokenIds.increment();
         mintedCount += 1;
         mintedTokenIds.push(currentId);
+        mintCountByAddress[msg.sender] += 1;
         emit NFTMinted(msg.sender, currentId);
         console.log(
             "An NFT w/ ID %s has been minted to %s",

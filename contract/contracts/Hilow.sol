@@ -46,7 +46,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     Game placeholderGame = Game(placeholderGameCards, 0, false, false);
     mapping(uint256 => uint256) private LOW_BET_PAYOFFS;
     mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
-    Card[MAX_WORDS] private cards;
+    Card[MAX_WORDS] internal cards;
     using Counters for Counters.Counter;
     Counters.Counter private _currentCard;
     mapping(address => Game) private gamesByAddr;
@@ -160,7 +160,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         emit DealerTipped(msg.sender, msg.value);
     }
 
-    function drawBulkRandomCards() private returns (uint256 requestId) {
+    function drawBulkRandomCards() internal returns (uint256 requestId) {
         requestId = COORDINATOR.requestRandomWords(
             s_keyHash,
             s_subscriptionId,

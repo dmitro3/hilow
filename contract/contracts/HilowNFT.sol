@@ -4,13 +4,18 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 import "./PayableContract.sol";
 
 import {Base64} from "./libraries/Base64.sol";
 
-contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
+contract HilowSupporterNFT is
+    ERC721URIStorage,
+    AccessControl,
+    PayableHilowContract
+{
     address internal _gameContractAddress;
     PayableHilowContract gameContract;
     using Counters for Counters.Counter;
@@ -22,6 +27,9 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
     uint256[] mintedTokenIds;
     mapping(uint256 => string) suits;
     mapping(address => uint256) mintCountByAddress;
+    bytes32 public constant FUND_GAME_ROLE = keccak256("FUND_GAME_ROLE");
+    bytes32 public constant PAYOUT_TRIGGER_ROLE =
+        keccak256("PAYOUT_TRIGGER_ROLE");
 
     event NFTMinted(address owner, uint256 tokenId);
 
@@ -31,11 +39,39 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
         suits[1] = unicode"♠";
         suits[2] = unicode"♥";
         suits[3] = unicode"♣";
+
+        grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        grantRole(FUND_GAME_ROLE, msg.sender);
+        grantRole(PAYOUT_TRIGGER_ROLE, msg.sender);
     }
 
     receive() external payable {}
 
-    function setGameContract(address payable _address) public onlyOwner {
+    function grantAdminRoleToAddress(address account)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        grantRole(DEFAULT_ADMIN_ROLE, account);
+    }
+
+    function grantFundGameRoleToAddress(address account)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        grantRole(FUND_GAME_ROLE, account);
+    }
+
+    function grantTriggerPayouRoleToAddress(address account)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        grantRole(PAYOUT_TRIGGER_ROLE, account);
+    }
+
+    function setGameContract(address payable _address)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         _gameContractAddress = _address;
         gameContract = PayableHilowContract(_gameContractAddress);
     }
@@ -113,7 +149,7 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
         return cardNames[value];
     }
 
-    function payoutSupporters() public onlyOwner {
+    function payoutSupporters() public onlyRole(PAYOUT_TRIGGER_ROLE) {
         require(
             _gameContractAddress != address(0),
             "Game contract address should be set"
@@ -133,5 +169,14 @@ contract HilowSupporterNFT is ERC721URIStorage, Ownable, PayableHilowContract {
         uint256 postPayoutBalance = address(this).balance;
         bool rsuccess = gameContract.sendFunds{value: postPayoutBalance}();
         require(rsuccess, "Return funds failed");
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, AccessControl)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }

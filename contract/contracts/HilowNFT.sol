@@ -13,6 +13,7 @@ import {Base64} from "./libraries/Base64.sol";
 
 contract HilowSupporterNFT is
     ERC721URIStorage,
+    Ownable,
     AccessControl,
     PayableHilowContract
 {
@@ -36,14 +37,14 @@ contract HilowSupporterNFT is
 
     constructor() ERC721("DegenJack Supporter NFT", "DEGENJACK") {
         console.log("DegenJack supporter NFT!");
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(FUND_GAME_ROLE, msg.sender);
+        _grantRole(PAYOUT_TRIGGER_ROLE, msg.sender);
+
         suits[0] = unicode"♦";
         suits[1] = unicode"♠";
         suits[2] = unicode"♥";
         suits[3] = unicode"♣";
-
-        grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        grantRole(FUND_GAME_ROLE, msg.sender);
-        grantRole(PAYOUT_TRIGGER_ROLE, msg.sender);
     }
 
     receive() external payable {}
@@ -145,7 +146,7 @@ contract HilowSupporterNFT is
         return cardNames[value];
     }
 
-    function get_gameFundReserve()
+    function getGameFundReserve()
         public
         view
         onlyRole(FUND_GAME_ROLE)

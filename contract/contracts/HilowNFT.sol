@@ -30,6 +30,7 @@ contract HilowSupporterNFT is
     bytes32 public constant FUND_GAME_ROLE = keccak256("FUND_GAME_ROLE");
     bytes32 public constant PAYOUT_TRIGGER_ROLE =
         keccak256("PAYOUT_TRIGGER_ROLE");
+    uint256 internal _gameFundReserve;
 
     event NFTMinted(address owner, uint256 tokenId);
 
@@ -121,12 +122,7 @@ contract HilowSupporterNFT is
             currentId,
             msg.sender
         );
-        require(
-            _gameContractAddress != address(0),
-            "Game contract address should be set"
-        );
-        bool success = gameContract.sendFunds{value: msg.value}();
-        require(success, "Fund transfer to game contract failed");
+        _gameFundReserve += msg.value;
     }
 
     function getCardName(uint256 value) internal pure returns (string memory) {
@@ -149,13 +145,44 @@ contract HilowSupporterNFT is
         return cardNames[value];
     }
 
+    function get_gameFundReserve()
+        public
+        view
+        onlyRole(FUND_GAME_ROLE)
+        returns (uint256)
+    {
+        return _gameFundReserve;
+    }
+
+    function deployGameFund(uint256 fundAmount)
+        public
+        onlyRole(FUND_GAME_ROLE)
+    {
+        require(
+            _gameContractAddress != address(0),
+            "Game contract address should be set"
+        );
+        require(
+            fundAmount < _gameFundReserve,
+            "Trying to fund more than the reserve"
+        );
+
+        bool success = gameContract.sendFunds{value: fundAmount}();
+        require(success, "Game fund failed");
+    }
+
     function payoutSupporters() public onlyRole(PAYOUT_TRIGGER_ROLE) {
         require(
             _gameContractAddress != address(0),
             "Game contract address should be set"
         );
-        uint256 balance = address(this).balance;
-        uint256 payoutPerSupporter = SafeMath.div(balance, TOTAL_NFTS);
+        uint256 supportersPayoutAmount = address(this).balance -
+            _gameFundReserve;
+        uint256 payoutPerSupporter = SafeMath.div(
+            supportersPayoutAmount,
+            TOTAL_NFTS
+        );
+        uint256 supportersPaidAmount;
 
         for (uint256 index = 0; index < mintedTokenIds.length; index++) {
             uint256 tokenId = mintedTokenIds[index];
@@ -164,11 +191,10 @@ contract HilowSupporterNFT is
                 value: payoutPerSupporter
             }("Sending payout to supporter");
             require(success, "Payout failed");
+            supportersPaidAmount += payoutPerSupporter;
         }
 
-        uint256 postPayoutBalance = address(this).balance;
-        bool rsuccess = gameContract.sendFunds{value: postPayoutBalance}();
-        require(rsuccess, "Return funds failed");
+        _gameFundReserve += (supportersPayoutAmount - supportersPaidAmount);
     }
 
     function supportsInterface(bytes4 interfaceId)

@@ -170,6 +170,8 @@ contract HilowSupporterNFT is
 
         bool success = gameContract.sendFunds{value: fundAmount}();
         require(success, "Game fund failed");
+
+        _gameFundReserve -= fundAmount;
     }
 
     function payoutSupporters() public onlyRole(PAYOUT_TRIGGER_ROLE) {

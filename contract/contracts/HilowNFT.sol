@@ -2,7 +2,6 @@
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -14,20 +13,17 @@ import {Base64} from "./libraries/Base64.sol";
 
 contract HilowSupporterNFT is
     ERC721URIStorage,
-    ERC721Royalty,
     Ownable,
     AccessControl,
     PayableHilowContract
 {
     address internal _gameContractAddress;
     PayableHilowContract gameContract;
-    PayableHilowContract supporterNFTRoyaltyContract;
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    uint256 constant TOTAL_NFTS = 676;
-    uint256 constant MIN_MINT_PRICE = 10 * 10**15;
-    uint256 constant MAX_MINT_PER_WALLET = 3;
-    uint96 constant ROYALTY_PERCENTAGE_BASIS_POINTS = 1000;
+    uint256 TOTAL_NFTS = 676;
+    uint256 MIN_MINT_PRICE = 10 * 10**15;
+    uint256 MAX_MINT_PER_WALLET = 3;
     uint256 private mintedCount;
     uint256[] mintedTokenIds;
     mapping(uint256 => string) suits;
@@ -39,17 +35,11 @@ contract HilowSupporterNFT is
 
     event NFTMinted(address owner, uint256 tokenId);
 
-    constructor(address _royaltyPayoutContractAddress)
-        ERC721("DegenJack Supporter NFT", "DEGENJACK")
-    {
+    constructor() ERC721("DegenJack Supporter NFT", "DEGENJACK") {
         console.log("DegenJack supporter NFT!");
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(FUND_GAME_ROLE, msg.sender);
         _grantRole(PAYOUT_TRIGGER_ROLE, msg.sender);
-        _setDefaultRoyalty(
-            _royaltyPayoutContractAddress,
-            ROYALTY_PERCENTAGE_BASIS_POINTS
-        );
 
         suits[0] = unicode"♦";
         suits[1] = unicode"♠";
@@ -214,26 +204,9 @@ contract HilowSupporterNFT is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721, ERC721Royalty, AccessControl)
+        override(ERC721, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
-    }
-
-    function _burn(uint256 tokenId)
-        internal
-        override(ERC721URIStorage, ERC721Royalty)
-    {
-        return super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
-        return super.tokenURI(tokenId);
     }
 }

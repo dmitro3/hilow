@@ -184,7 +184,7 @@ contract HilowSupporterNFT is
         _gameFundReserve -= fundAmount;
     }
 
-    function payoutSupporters() public onlyRole(PAYOUT_TRIGGER_ROLE) {
+    function payoutSupporters() public {
         require(
             _gameContractAddress != address(0),
             "Game contract address should be set"
@@ -196,6 +196,7 @@ contract HilowSupporterNFT is
             TOTAL_NFTS
         );
         uint256 supportersPaidAmount;
+        require(supportersPayoutAmount > 0, "Total payout amount less than 0");
 
         for (uint256 index = 0; index < mintedTokenIds.length; index++) {
             uint256 tokenId = mintedTokenIds[index];

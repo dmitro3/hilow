@@ -82,7 +82,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         );
 
         // Set low bet payoffs
-        LOW_BET_PAYOFFS[1] = 300;
+        LOW_BET_PAYOFFS[1] = 200;
         LOW_BET_PAYOFFS[2] = 192;
         LOW_BET_PAYOFFS[3] = 184;
         LOW_BET_PAYOFFS[4] = 176;
@@ -109,7 +109,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         HIGH_BET_PAYOFFS[10] = 176;
         HIGH_BET_PAYOFFS[11] = 184;
         HIGH_BET_PAYOFFS[12] = 192;
-        HIGH_BET_PAYOFFS[13] = 300;
+        HIGH_BET_PAYOFFS[13] = 200;
     }
 
     receive() external payable {}

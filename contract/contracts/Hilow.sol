@@ -206,7 +206,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         if (_currentCard.current() > BUFFER_WORDS) {
             drawBulkRandomCards();
         }
-        if (_currentCard.current() > MAX_WORDS) {
+        if (_currentCard.current() >= MAX_WORDS) {
             _currentCard.reset();
         }
 
@@ -291,7 +291,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
             "Second card has already been drawn for the game"
         );
         payCommission();
-        if (_currentCard.current() > MAX_WORDS) {
+        if (_currentCard.current() >= MAX_WORDS) {
             _currentCard.reset();
         }
 
@@ -338,7 +338,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
             currentGameCards.thirdDraw.value == 0,
             "Third card has already been drawn for the game"
         );
-        if (_currentCard.current() > MAX_WORDS) {
+        if (_currentCard.current() >= MAX_WORDS) {
             _currentCard.reset();
         }
 

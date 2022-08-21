@@ -22,7 +22,7 @@ contract HilowSupporterNFT is
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     uint256 TOTAL_NFTS = 676;
-    uint256 MIN_MINT_PRICE = 10 * 10**15;
+    uint256 MIN_MINT_PRICE = 1 * 10**12;
     uint256 MAX_MINT_PER_WALLET = 3;
     uint256 private mintedCount;
     uint256[] mintedTokenIds;
@@ -49,6 +49,10 @@ contract HilowSupporterNFT is
 
     receive() external payable {}
 
+    function totalSupply() external view returns (uint256) {
+        return mintedCount;
+    }
+
     function grantAdminRoleToAddress(address account)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -63,7 +67,7 @@ contract HilowSupporterNFT is
         grantRole(FUND_GAME_ROLE, account);
     }
 
-    function grantTriggerPayouRoleToAddress(address account)
+    function grantTriggerPayoutRoleToAddress(address account)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {

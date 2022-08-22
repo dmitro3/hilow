@@ -39,6 +39,15 @@ const deploy = async () => {
   const setGameContractTxn = await HilowNFT.setGameContract(Hilow.address);
   await setGameContractTxn.wait();
   console.log("Game contract has been set on NFT");
+
+  let grantRoleTxn;
+  teamWalletAddresses.forEach(async (address) => {
+    grantRoleTxn = await HilowNFT.grantAdminRoleToAddress(address);
+    await grantRoleTxn.wait();
+
+    grantRoleTxn = await HilowNFT.grantFundGameRoleToAddress(address);
+    await grantRoleTxn.wait();
+  });
 };
 
 const runDeploy = async () => {
